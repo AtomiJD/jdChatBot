@@ -1,0 +1,36 @@
+Welcome to jdChat bot
+
+NAME
+    jdChatBot.py
+
+DESCRIPTION
+    This programm uses the openai model 'text-davinci-003' for simple chat functions.
+    Interpreter is the cmd module of python
+    Use '.\log.txt' for some initial chat infos given to the ai.
+    Ex.: (Stop word is '\nYou')
+        You: My name is Atomi.
+        My favorite programming language is c.
+        Today is 02/11/2023.
+        AI: OK
+
+COMMANDS
+    help    -   Shows this file (./help.txt)
+    cls     -   Clears the chat window
+    clear   -   Empty chat log 
+    quit    -   Ends jdChat bot
+    set     -   Set some parameter: set [parameter] [value]
+                tokens on|off   -   Shows the token count of the request
+                temperature     -   Set the temperature (default = 0.7)
+                top             -   Set parameter top_p (default = 0.7)
+                frequency       -   Set parameter frequency_penalty (default = 1.0)
+                presence        -   Set parameter presence_penalty (default = 1.2)
+                best            -   Set parameter best_of (default = 1.0)
+                tokens          -   Set parameter max_tokens (default = 2048)
+                [no parameter]  -   display all parameter values
+                speech on|off   -   Activates speech output
+    record  -   Starts voice recording
+
+
+AUTHOR
+    Written by Atomi J.D.
+
