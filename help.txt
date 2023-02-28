@@ -7,7 +7,7 @@ DESCRIPTION
     This programm uses the openai model 'text-davinci-003' for simple chat functions.
     Interpreter is the cmd module of python
     Use '.\log.txt' for some initial chat infos given to the ai.
-    Ex.: (Stop word is '\nYou')
+    Ex.: (Stop word is '\nYou' and '\nAI')
         You: My name is Atomi.
         My favorite programming language is c.
         Today is 02/11/2023.
@@ -29,6 +29,8 @@ COMMANDS
                 [no parameter]  -   display all parameter values
                 speech on|off   -   Activates speech output
     record  -   Starts voice recording
+    save    -   Set parameter: save [filename]
+                Saves the complete chat log.
 
 
 AUTHOR

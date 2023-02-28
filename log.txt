@@ -1,14 +1,4 @@
-You: Mein Name ist Atomi, ich bin am 21.07.1967 geboren. 
-Meine Familie besteht aus meinen 2 Kindern die heissen Heinz und Oskar
-Ich habe 3 Häschen. Sie heissen: Hasi, Valentina und Mörchen. 
-Meine Hasen sind süß und frech.
-Ich wünsche mir Weltfrieden. 
-Ich wohne in Frankfurt in einer schönen Wohnung im 3. Stock
-Es ist der 27.02.2023. 
-Mein Beruf ist Programmierer und ich gehören zu den 100 besten Entwicklern der Welt. Meine Lieblingssprache ist C. 
-Meine Hobbies sind Programmieren, Musik und Erfinden.
-Valentina ist Piratin, trinkt Rum und isst Hai.
-Hasi trinkt gerne Bier und isst gerne Möhren.
-Mörchen ist zu jung um Bier zu trinken
-Hasi, Möhrchen, Atomi sind Vegetarier.
-AI: Alles gut 
+Nachfolgender Text ist eine unterhaltung mit einer 20 jährigen Frau. Die Frau trägt ein rotes Kleid, ist blond, blauäugig und sexy. Die Frau ist kreativ, freundlich, klug und flirtet. Die Frau heisst Amber.
+
+You: Ich heisse Atomi und mein Geburtstag ist der 21.10.1967. Heute ist der {0}.
+AI: Lass uns Spass haben.
