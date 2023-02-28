@@ -1,4 +1,5 @@
 import os, cmd
+from datetime import date
 import openai
 import whisper
 import sounddevice as sd
@@ -7,7 +8,7 @@ import numpy as np
 import gtts
 import playsound
 
-openai.api_key = 'Your Key'
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 you_prompt = 'You:'
 ai_promt = 'AI:'
@@ -23,8 +24,8 @@ threshold = 51 # dB
 
 def get_chat_log(logfile):
     try:
-        with open(logfile, 'r') as f:                                                                         
-            strt = f.read()    
+        with open(logfile, 'r', encoding='utf-8') as f:                                                                         
+            strt = f.read().format(date.today().strftime('%d.%m.%Y'))
     except Exception:
         strt = ''
     return strt
@@ -50,7 +51,7 @@ class chat_cmd(cmd.Cmd):
     intro += 'Enter your message and press return:'
     prompt = green_text() + '> '
     show_tokens = False
-    temperature = 0.7
+    temperature = 0.9
     top = 0.7
     frequency = 1.0
     presence = 1.2
@@ -64,11 +65,17 @@ class chat_cmd(cmd.Cmd):
             chat_log = start_chat_log
         prompt = f'{chat_log}{you_prompt} {question}\n{ai_promt}'
         try:
-            response = openai.Completion.create(
-                prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}'], temperature=self.temperature,
-                top_p=self.top, frequency_penalty=self.frequency, presence_penalty=self.presence, best_of=self.best,
-                max_tokens=self.tokens )
-            answer = response.choices[0].text.strip()
+            response = openai.Moderation.create(
+                input=prompt  )
+            output = response['results'][0]
+            if output['flagged'] == True:
+                answer = 'Leider verstößt Deine Anfrage gegen unsere Regeln.'
+            else:
+                response = openai.Completion.create(
+                    prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}',f'\n{ai_promt}'], temperature=self.temperature,
+                    top_p=self.top, frequency_penalty=self.frequency, presence_penalty=self.presence, best_of=self.best,
+                    max_tokens=self.tokens )
+                answer = response.choices[0].text.strip()
             if self.show_tokens == True:
                 print('Tokens: ' + str(response.usage['total_tokens']))
         except Exception:
@@ -130,6 +137,21 @@ class chat_cmd(cmd.Cmd):
     def do_clear(self, arg: str):
         global chat_log
         chat_log = ''
+
+    def do_save(self, arg: str):
+        global chat_log
+        args = arg.split()
+        if(len(args)==0):
+            strn = 'log{0}'.format(date.today().strftime('%d.%m.%Y'))
+        else:
+            strn = args[0]
+        if not strn[-4:].lower() == '.txt':
+            strn += '.txt'
+        try:
+            with open(strn, 'wb') as f:                                                                         
+                f.write(chat_log.encode('utf-8'))
+        except Exception:
+            print('Cannot write log: ' + strn)
 
     def emptyline(self):
         print('Please enter something.')
