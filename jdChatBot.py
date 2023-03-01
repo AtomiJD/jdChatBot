@@ -1,5 +1,5 @@
 import os, cmd
-from datetime import date
+from datetime import datetime
 import openai
 import whisper
 import sounddevice as sd
@@ -7,6 +7,11 @@ import soundfile as sf
 import numpy as np
 import gtts
 import playsound
+from pygments import highlight
+from pygments.style import Style
+from pygments.token import Token
+from pygments.lexers import Python3Lexer
+from pygments.formatters import Terminal256Formatter
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
@@ -25,7 +30,7 @@ threshold = 51 # dB
 def get_chat_log(logfile):
     try:
         with open(logfile, 'r', encoding='utf-8') as f:                                                                         
-            strt = f.read().format(date.today().strftime('%d.%m.%Y'))
+            strt = f.read().format(datetime.now().strftime('%d.%m.%Y'))
     except Exception:
         strt = ''
     return strt
@@ -59,6 +64,7 @@ class chat_cmd(cmd.Cmd):
     tokens = 2048
     language = 'German'
     speech = False
+    highlightcode = False
 
     def ask(self, question, chat_log=None):
         if chat_log is None:
@@ -82,7 +88,7 @@ class chat_cmd(cmd.Cmd):
             answer = 'Oh, I timed out. Try again :-('
         return answer
 
-    def append_interaction_to_chat_log(self, question, answer, chat_log=None):
+    def concat_chat_log(self, question, answer, chat_log=None):
         if chat_log is None:
             chat_log = start_chat_log
         return f'{chat_log}{you_prompt} {question}\n{ai_promt} {answer}\n'
@@ -126,6 +132,8 @@ class chat_cmd(cmd.Cmd):
                     self.tokens = int(args[1])
                 elif(args[0]=='language'):
                     self.language = args[1]
+                if(args[0]=='syntax'):
+                    self.highlightcode = True if args[1]=='on' else False
                 else:
                     print('Wrong parameter in command: set.')           
         except Exception:
@@ -142,10 +150,10 @@ class chat_cmd(cmd.Cmd):
         global chat_log
         args = arg.split()
         if(len(args)==0):
-            strn = 'log{0}'.format(date.today().strftime('%d.%m.%Y'))
+            strn = 'log_{0}'.format(datetime.now().strftime('%d%m%Y_%H%M%S'))
         else:
             strn = args[0]
-        if not strn[-4:].lower() == '.txt':
+        if len(strn) < 5 or not strn[-4:].lower() == '.txt':
             strn += '.txt'
         try:
             with open(strn, 'wb') as f:                                                                         
@@ -166,12 +174,15 @@ class chat_cmd(cmd.Cmd):
         question = line
         print(blue_text(), end='')
         answer = self.ask(question, chat_log)
-        print(answer)
+        if self.highlightcode:
+                print(blue_text()+highlight(answer, Python3Lexer(), Terminal256Formatter(style='github-dark')))
+        else:
+            print(answer)
         if self.speech:
             spgtts = gtts.gTTS(text=answer, lang='de')
             spgtts.save('.\\answer.mp3')
             playsound.playsound(os.getcwd() + '\\answer.mp3')
-        chat_log = self.append_interaction_to_chat_log(question, answer, chat_log)
+        chat_log = self.concat_chat_log(question, answer, chat_log)
         print(green_text())
         
     def precmd(self, line):

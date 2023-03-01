@@ -20,14 +20,16 @@ COMMANDS
     quit    -   Ends jdChat bot
     set     -   Set some parameter: set [parameter] [value]
                 tokens on|off   -   Shows the token count of the request
-                temperature     -   Set the temperature (default = 0.7)
+                temperature     -   Set the temperature (default = 0.9)
                 top             -   Set parameter top_p (default = 0.7)
                 frequency       -   Set parameter frequency_penalty (default = 1.0)
                 presence        -   Set parameter presence_penalty (default = 1.2)
                 best            -   Set parameter best_of (default = 1.0)
                 tokens          -   Set parameter max_tokens (default = 2048)
-                [no parameter]  -   display all parameter values
                 speech on|off   -   Activates speech output
+                language        -   Set speech language (default = German)
+                syntax on|off   -   Activates syntax highlighting
+                [no parameter]  -   display all parameter values
     record  -   Starts voice recording
     save    -   Set parameter: save [filename]
                 Saves the complete chat log.
