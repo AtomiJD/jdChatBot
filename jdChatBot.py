@@ -75,7 +75,7 @@ class chat_cmd(cmd.Cmd):
                 input=prompt  )
             output = response['results'][0]
             if output['flagged'] == True:
-                answer = 'Leider verstößt Deine Anfrage gegen unsere Regeln.'
+                answer = 'Your request is violating OpenAI\'s content policy.'
             else:
                 response = openai.Completion.create(
                     prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}',f'\n{ai_prompt}'], temperature=self.temperature,
@@ -116,7 +116,6 @@ class chat_cmd(cmd.Cmd):
                 print(f'tokens: {self.tokens}, temperature: {self.temperature}, top: {self.top}')
                 print(f'frequency: {self.frequency}, presence: {self.presence}, best: {self.best}')
                 print(f'language: {self.language}, highlightcode: {self.highlightcode}, prompt: {you_prompt} {ai_prompt}')
-                #print(f'language: {self.language}, syntax: {self.highlightcode}, prompt: {you_prompt} {ai_prompt}')
                 print(f'speech: {self.speech}')
             else:
                 if(args[0]=='tokens'):
