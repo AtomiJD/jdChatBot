@@ -16,6 +16,7 @@ DESCRIPTION
 COMMANDS
     help    -   Shows this file (./help.txt)
     cls     -   Clears the chat window
+    list    -   Print chat log 
     clear   -   Empty chat log 
     quit    -   Ends jdChat bot
     set     -   Set some parameter: set [parameter] [value]
@@ -31,9 +32,12 @@ COMMANDS
                 syntax on|off   -   Activates syntax highlighting
                 [no parameter]  -   display all parameter values
     record  -   Starts voice recording
-    save    -   Set parameter: save [filename]
-                Saves the complete chat log.
-
+    save    -   Parameter: save [filename]
+                Saves the complete chat log to [filename].
+                No parameter, date and time will be used as [filename] ex. log_20230302_0653.txt
+    prompt  -   Parameter: prompt [prompt1] [prompt2]
+                Ex.: prompt You: Heinz:
+                New stop words are '\nYou:' and '\nHeinz:'
 
 AUTHOR
     Written by Atomi J.D.

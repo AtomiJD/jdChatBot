@@ -16,10 +16,10 @@ from pygments.formatters import Terminal256Formatter
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 you_prompt = 'You:'
-ai_promt = 'AI:'
+ai_prompt = 'AI:'
 
 start_chat_log = f'''{you_prompt} Hello 
-{ai_promt} Hi 
+{ai_prompt} Hi 
 '''
 
 chat_log = None
@@ -69,7 +69,7 @@ class chat_cmd(cmd.Cmd):
     def ask(self, question, chat_log=None):
         if chat_log is None:
             chat_log = start_chat_log
-        prompt = f'{chat_log}{you_prompt} {question}\n{ai_promt}'
+        prompt = f'{chat_log}{you_prompt} {question}\n{ai_prompt}'
         try:
             response = openai.Moderation.create(
                 input=prompt  )
@@ -78,7 +78,7 @@ class chat_cmd(cmd.Cmd):
                 answer = 'Leider verstößt Deine Anfrage gegen unsere Regeln.'
             else:
                 response = openai.Completion.create(
-                    prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}',f'\n{ai_promt}'], temperature=self.temperature,
+                    prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}',f'\n{ai_prompt}'], temperature=self.temperature,
                     top_p=self.top, frequency_penalty=self.frequency, presence_penalty=self.presence, best_of=self.best,
                     max_tokens=self.tokens )
                 answer = response.choices[0].text.strip()
@@ -91,7 +91,7 @@ class chat_cmd(cmd.Cmd):
     def concat_chat_log(self, question, answer, chat_log=None):
         if chat_log is None:
             chat_log = start_chat_log
-        return f'{chat_log}{you_prompt} {question}\n{ai_promt} {answer}\n'
+        return f'{chat_log}{you_prompt} {question}\n{ai_prompt} {answer}\n'
 
     def do_help(self, arg: str):
         try:
@@ -108,11 +108,16 @@ class chat_cmd(cmd.Cmd):
         return True
 
     def do_set(self, arg: str):
+        global you_prompt
+        global ai_prompt
         try:
             args = arg.split()
             if(len(args)==0):
                 print(f'tokens: {self.tokens}, temperature: {self.temperature}, top: {self.top}')
                 print(f'frequency: {self.frequency}, presence: {self.presence}, best: {self.best}')
+                print(f'language: {self.language}, highlightcode: {self.highlightcode}, prompt: {you_prompt} {ai_prompt}')
+                #print(f'language: {self.language}, syntax: {self.highlightcode}, prompt: {you_prompt} {ai_prompt}')
+                print(f'speech: {self.speech}')
             else:
                 if(args[0]=='tokens'):
                     self.show_tokens = True if args[1]=='on' else False
@@ -134,6 +139,10 @@ class chat_cmd(cmd.Cmd):
                     self.language = args[1]
                 if(args[0]=='syntax'):
                     self.highlightcode = True if args[1]=='on' else False
+                elif(args[0]=='prompt'):
+                    you_prompt = args[1]
+                    if (len(args)==2):
+                        ai_prompt = args[2]
                 else:
                     print('Wrong parameter in command: set.')           
         except Exception:
@@ -141,6 +150,10 @@ class chat_cmd(cmd.Cmd):
 
     def do_cls(self, arg: str):
         print(reset_console(), end='') 
+
+    def do_list(self, arg: str):
+        global chat_log
+        print(chat_log) 
 
     def do_clear(self, arg: str):
         global chat_log
@@ -150,7 +163,7 @@ class chat_cmd(cmd.Cmd):
         global chat_log
         args = arg.split()
         if(len(args)==0):
-            strn = 'log_{0}'.format(datetime.now().strftime('%d%m%Y_%H%M%S'))
+            strn = 'log_{0}'.format(datetime.now().strftime('%Y%m%d_%H%M%S'))
         else:
             strn = args[0]
         if len(strn) < 5 or not strn[-4:].lower() == '.txt':
