@@ -6,12 +6,21 @@ NAME
 DESCRIPTION
     This programm uses the openai model 'text-davinci-003' for simple chat functions.
     Interpreter is the cmd module of python
+    For: 'text-davinci-003'
     Use '.\log.txt' for some initial chat infos given to the ai.
     Ex.: (Stop word is '\nYou' and '\nAI')
         You: My name is Atomi.
         My favorite programming language is c.
         Today is 02/11/2023.
         AI: OK
+    For: 'gpt-3.5-turbo'
+    Use '.\log.json' for some initial chat infos given to the ai.
+    Ex.: 
+    [
+    {"role": "system", "content": "Du bist ein hilfreicher und cleverer Assistent. Heute ist der {current_date}. Dein Name ist Heinz."},
+    {"role": "assistant", "content": "Hallo"},
+    {"role": "user", "content": "Hallo"}
+    ]
 
 COMMANDS
     help    -   Shows this file (./help.txt)

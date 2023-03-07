@@ -1,12 +1,12 @@
 import os, cmd
 from datetime import datetime
 import openai
-import whisper
 import sounddevice as sd
 import soundfile as sf
 import numpy as np
 import gtts
 import playsound
+import json
 from pygments import highlight
 from pygments.style import Style
 from pygments.token import Token
@@ -15,13 +15,31 @@ from pygments.formatters import Terminal256Formatter
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-you_prompt = 'You:'
-ai_prompt = 'AI:'
+def get_model_engine():
+    return 'gpt-3.5-turbo'
 
-start_chat_log = f'''{you_prompt} Hello 
-{ai_prompt} Hi 
-'''
-
+if get_model_engine() == 'gpt-3.5-turbo':
+    # 'gpt-3.5-turbo'
+    system_role = 'system'
+    assistant_role = 'assistant'
+    user_role = 'user'
+    start_chat_log = []
+    chat_dict = {}
+    chat_dict['role'] = system_role
+    chat_dict['content'] = 'Hello'
+    start_chat_log.append(chat_dict)
+    chat_dict = {}
+    chat_dict['role'] = assistant_role
+    chat_dict['content'] = 'Hi'
+    start_chat_log.append(chat_dict)
+else:
+    # 'text-davinci-003'
+    you_prompt = 'You:'
+    ai_prompt = 'AI:'
+    start_chat_log = f'''{you_prompt} Hello 
+    {ai_prompt} Hi 
+    '''
+    
 chat_log = None
 
 sampling_rate = 44100 # Hz
@@ -29,14 +47,17 @@ threshold = 51 # dB
 
 def get_chat_log(logfile):
     try:
-        with open(logfile, 'r', encoding='utf-8') as f:                                                                         
-            strt = f.read().format(datetime.now().strftime('%d.%m.%Y'))
+        if get_model_engine() == 'gpt-3.5-turbo':
+            with open(logfile, 'r', encoding='utf-8') as f:
+                strf = f.read()
+                strf = strf.replace('{current_date}', str(datetime.now().strftime('%d.%m.%Y')))
+                strt = json.loads(strf)
+        else:
+            with open(logfile, 'r', encoding='utf-8') as f:
+                strt = f.read().format(datetime.now().strftime('%d.%m.%Y'))
     except Exception:
         strt = ''
     return strt
-
-def get_model_engine():
-    return 'text-davinci-003'
 
 def reset_console():
     return '\033c\x1b[2J'
@@ -67,9 +88,12 @@ class chat_cmd(cmd.Cmd):
     highlightcode = False
 
     def ask(self, question, chat_log=None):
-        if chat_log is None:
-            chat_log = start_chat_log
-        prompt = f'{chat_log}{you_prompt} {question}\n{ai_prompt}'
+        if get_model_engine() == 'gpt-3.5-turbo':
+            prompt = question
+        else:
+            if chat_log is None:
+                chat_log = start_chat_log
+            prompt = f'{chat_log}{you_prompt} {question}\n{ai_prompt}'
         try:
             response = openai.Moderation.create(
                 input=prompt  )
@@ -77,11 +101,18 @@ class chat_cmd(cmd.Cmd):
             if output['flagged'] == True:
                 answer = 'Your request is violating OpenAI\'s content policy.'
             else:
-                response = openai.Completion.create(
-                    prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}',f'\n{ai_prompt}'], temperature=self.temperature,
-                    top_p=self.top, frequency_penalty=self.frequency, presence_penalty=self.presence, best_of=self.best,
-                    max_tokens=self.tokens )
-                answer = response.choices[0].text.strip()
+                if get_model_engine() == 'gpt-3.5-turbo':
+                    response = openai.ChatCompletion.create(
+                    model=get_model_engine(), 
+                    messages=start_chat_log
+                    )
+                    answer = response['choices'][0]['message']['content']
+                else:
+                    response = openai.Completion.create(
+                        prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}',f'\n{ai_prompt}'], temperature=self.temperature,
+                        top_p=self.top, frequency_penalty=self.frequency, presence_penalty=self.presence, best_of=self.best,
+                        max_tokens=self.tokens )
+                    answer = response.choices[0].text.strip()
             if self.show_tokens == True:
                 print('Tokens: ' + str(response.usage['total_tokens']))
         except Exception:
@@ -151,12 +182,20 @@ class chat_cmd(cmd.Cmd):
         print(reset_console(), end='') 
 
     def do_list(self, arg: str):
-        global chat_log
-        print(chat_log) 
+        if get_model_engine() == 'gpt-3.5-turbo':
+            global start_chat_log
+            print(start_chat_log )
+        else:
+            global chat_log
+            print(chat_log) 
 
     def do_clear(self, arg: str):
-        global chat_log
-        chat_log = ''
+        if get_model_engine() == 'gpt-3.5-turbo':
+            global start_chat_log
+            start_chat_log = []
+        else:
+            global chat_log
+            chat_log = ''
 
     def do_save(self, arg: str):
         global chat_log
@@ -165,11 +204,15 @@ class chat_cmd(cmd.Cmd):
             strn = 'log_{0}'.format(datetime.now().strftime('%Y%m%d_%H%M%S'))
         else:
             strn = args[0]
-        if len(strn) < 5 or not strn[-4:].lower() == '.txt':
-            strn += '.txt'
+        strex = '.json',  6 if get_model_engine() == 'gpt-3.5-turbo' else '.txt', 5
+        if len(strn) < strex[1] or not strn[-(strex[1]-1):].lower() == strex[0]:
+            strn += strex[0]
         try:
-            with open(strn, 'wb') as f:                                                                         
-                f.write(chat_log.encode('utf-8'))
+            with open(strn, 'wb') as f:
+                if get_model_engine() == 'gpt-3.5-turbo':
+                    f.write(json.dumps(start_chat_log).encode('utf-8'))
+                else:                                            
+                    f.write(chat_log.encode('utf-8'))
         except Exception:
             print('Cannot write log: ' + strn)
 
@@ -194,7 +237,18 @@ class chat_cmd(cmd.Cmd):
             spgtts = gtts.gTTS(text=answer, lang='de')
             spgtts.save('.\\answer.mp3')
             playsound.playsound(os.getcwd() + '\\answer.mp3')
-        chat_log = self.concat_chat_log(question, answer, chat_log)
+        if get_model_engine() == 'gpt-3.5-turbo':
+            global start_chat_log
+            chat_dict = {}
+            chat_dict['role'] = user_role
+            chat_dict['content'] = question
+            start_chat_log.append(chat_dict)            
+            chat_dict = {}
+            chat_dict['role'] = assistant_role
+            chat_dict['content'] = answer
+            start_chat_log.append(chat_dict)
+        else:            
+            chat_log = self.concat_chat_log(question, answer, chat_log)
         print(green_text())
         
     def precmd(self, line):
@@ -214,10 +268,13 @@ class chat_cmd(cmd.Cmd):
                 silent = True
         #print('Stopped recording')
         audio = np.concatenate(audio_chunks)
-        sf.write('.\input.wav', audio, sampling_rate)
-        model = whisper.load_model('base')
-        result = model.transcribe('.\input.wav', fp16=False, language=self.language)
-        return result['text']
+        sf.write('.\\input.wav', audio, sampling_rate)
+        file = open('.\\input.wav', "rb")
+        transcription = openai.Audio.transcribe("whisper-1", file)
+        return transcription['text']
+        #model = whisper.load_model('base')
+        #result = model.transcribe('.\input.wav', fp16=False, language=self.language)
+        #return result['text']
 
 def volume(audio):
     audio = audio.astype(np.float32)
@@ -227,5 +284,7 @@ def volume(audio):
 if __name__ == '__main__':
     os.system('color')
     print(reset_console()) 
-    start_chat_log = get_chat_log('.\log.txt')
+    #start_chat_log = get_chat_log('.\log.txt')
+    #start_chat_log = get_chat_log('.\log.json')
+    start_chat_log = get_chat_log('.\log.json')
     chat_cmd().cmdloop()
