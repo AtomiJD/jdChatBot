@@ -8,42 +8,40 @@ import gtts
 import playsound
 import json
 from pygments import highlight
-from pygments.style import Style
-from pygments.token import Token
+#from pygments.style import Style
+#from pygments.token import Token
 from pygments.lexers import Python3Lexer
 from pygments.formatters import Terminal256Formatter
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-def get_model_engine():
-    return 'gpt-3.5-turbo'
+def get_model_engine(engine='gpt-3.5-turbo'):
+    if engine == 'gpt-3.5-turbo':
+        return 'gpt-3.5-turbo'
+    else:
+        return 'text-davinci-003'
 
-if get_model_engine() == 'gpt-3.5-turbo':
-    # 'gpt-3.5-turbo'
-    system_role = 'system'
-    assistant_role = 'assistant'
-    user_role = 'user'
-    start_chat_log = []
-    chat_dict = {}
-    chat_dict['role'] = system_role
-    chat_dict['content'] = 'Hello'
-    start_chat_log.append(chat_dict)
-    chat_dict = {}
-    chat_dict['role'] = assistant_role
-    chat_dict['content'] = 'Hi'
-    start_chat_log.append(chat_dict)
-else:
-    # 'text-davinci-003'
-    you_prompt = 'You:'
-    ai_prompt = 'AI:'
-    start_chat_log = f'''{you_prompt} Hello 
-    {ai_prompt} Hi 
-    '''
-    
-chat_log = None
+def reset_engine():
+    global system_role
+    global assistant_role
+    global user_role
+    global start_chat_log
+    global chat_log
+    if get_model_engine() == 'gpt-3.5-turbo':
+        system_role = 'system'
+        assistant_role = 'assistant'
+        user_role = 'user'
+        start_chat_log = [{"role": system_role, "content": "Hello"}, {"role": assistant_role, "content": "Hi"}]
+    else:
+        you_prompt = 'You:'
+        ai_prompt = 'AI:'
+        start_chat_log = f'''{you_prompt} Hello 
+        {ai_prompt} Hi 
+        '''
+    chat_log = None
 
-sampling_rate = 44100 # Hz
-threshold = 51 # dB
+sampling_rate = 44100 
+threshold = 51 
 
 def get_chat_log(logfile):
     try:
@@ -56,6 +54,7 @@ def get_chat_log(logfile):
             with open(logfile, 'r', encoding='utf-8') as f:
                 strt = f.read().format(datetime.now().strftime('%d.%m.%Y'))
     except Exception:
+        print('Cannot load chat log.')
         strt = ''
     return strt
 
@@ -90,6 +89,11 @@ class chat_cmd(cmd.Cmd):
     def ask(self, question, chat_log=None):
         if get_model_engine() == 'gpt-3.5-turbo':
             prompt = question
+            global start_chat_log
+            chat_dict = {}
+            chat_dict['role'] = user_role
+            chat_dict['content'] = question
+            start_chat_log.append(chat_dict)          
         else:
             if chat_log is None:
                 chat_log = start_chat_log
@@ -238,11 +242,6 @@ class chat_cmd(cmd.Cmd):
             spgtts.save('.\\answer.mp3')
             playsound.playsound(os.getcwd() + '\\answer.mp3')
         if get_model_engine() == 'gpt-3.5-turbo':
-            global start_chat_log
-            chat_dict = {}
-            chat_dict['role'] = user_role
-            chat_dict['content'] = question
-            start_chat_log.append(chat_dict)            
             chat_dict = {}
             chat_dict['role'] = assistant_role
             chat_dict['content'] = answer
@@ -255,26 +254,20 @@ class chat_cmd(cmd.Cmd):
         return line
     
     def voice_rec(self):
-        #print('Started recording...')
         audio_chunks = []
         silent = False
         while not silent:
             audio_chunk = sd.rec(int(sampling_rate), dtype='int16', channels=1, blocking=True)
             audio_chunks.append(audio_chunk)
             volume_chunk = volume(audio_chunk)
-            #print(f'Volume: {volume_chunk} dB')
             print(make_bar(int(volume_chunk - threshold)), end='')
             if volume_chunk < threshold:
                 silent = True
-        #print('Stopped recording')
         audio = np.concatenate(audio_chunks)
         sf.write('.\\input.wav', audio, sampling_rate)
         file = open('.\\input.wav', "rb")
         transcription = openai.Audio.transcribe("whisper-1", file)
         return transcription['text']
-        #model = whisper.load_model('base')
-        #result = model.transcribe('.\input.wav', fp16=False, language=self.language)
-        #return result['text']
 
 def volume(audio):
     audio = audio.astype(np.float32)
@@ -282,9 +275,11 @@ def volume(audio):
     return 20 * np.log10(rms)
 
 if __name__ == '__main__':
+    reset_engine()
     os.system('color')
     print(reset_console()) 
-    #start_chat_log = get_chat_log('.\log.txt')
-    #start_chat_log = get_chat_log('.\log.json')
-    start_chat_log = get_chat_log('.\log.json')
+    if get_model_engine() == 'gpt-3.5-turbo':
+        start_chat_log = get_chat_log('.\log.json')
+    else:
+        start_chat_log = get_chat_log('.\log.txt')
     chat_cmd().cmdloop()
