@@ -8,9 +8,7 @@ import gtts
 import playsound
 import json
 from pygments import highlight
-#from pygments.style import Style
-#from pygments.token import Token
-from pygments.lexers import Python3Lexer
+from pygments.lexers import get_lexer_by_name
 from pygments.formatters import Terminal256Formatter
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -81,10 +79,10 @@ class chat_cmd(cmd.Cmd):
     frequency = 1.0
     presence = 1.2
     best = 1
-    tokens = 2048
+    tokens = 3500
     language = 'German'
     speech = False
-    highlightcode = False
+    highlightcode = True
 
     def ask(self, question, chat_log=None):
         if get_model_engine() == 'gpt-3.5-turbo':
@@ -107,10 +105,12 @@ class chat_cmd(cmd.Cmd):
             else:
                 if get_model_engine() == 'gpt-3.5-turbo':
                     response = openai.ChatCompletion.create(
-                    model=get_model_engine(), 
-                    messages=start_chat_log
+                        model=get_model_engine(), temperature=self.temperature,
+                        top_p=self.top, frequency_penalty=self.frequency, presence_penalty=self.presence,
+                        max_tokens=self.tokens,
+                        messages=start_chat_log
                     )
-                    answer = response['choices'][0]['message']['content']
+                    answer = response.choices[0].message.content.strip()
                 else:
                     response = openai.Completion.create(
                         prompt=prompt, engine=get_model_engine(), stop=[f'\n{you_prompt}',f'\n{ai_prompt}'], temperature=self.temperature,
@@ -171,7 +171,7 @@ class chat_cmd(cmd.Cmd):
                     self.tokens = int(args[1])
                 elif(args[0]=='language'):
                     self.language = args[1]
-                if(args[0]=='syntax'):
+                elif(args[0]=='syntax'):
                     self.highlightcode = True if args[1]=='on' else False
                 elif(args[0]=='prompt'):
                     you_prompt = args[1]
@@ -228,13 +228,34 @@ class chat_cmd(cmd.Cmd):
         print(self.prompt + strt)
         self.default(strt)
 
+    def syntax_highlight(self, inputstr):
+        fr = ''
+        s = inputstr.find("```")
+        e = inputstr.find("```", s+3)
+        if s >= 0 and e >= 0:
+            code = inputstr[s+3:e]
+            language, code = code.split('\n', 1)
+            if len(language)==0:
+                language = 'Python'
+            lexer = get_lexer_by_name(language)
+            code = highlight(code, lexer, Terminal256Formatter(style='github-dark'))
+            fr = inputstr[:s] + code + inputstr[e:]
+        elif s==-1 and e == -1:
+            fr = inputstr
+        else:
+            fr = inputstr.replace("```","")
+        return fr
+
     def default(self, line: str):
         global chat_log
         question = line
         print(blue_text(), end='')
         answer = self.ask(question, chat_log)
         if self.highlightcode:
-                print(blue_text()+highlight(answer, Python3Lexer(), Terminal256Formatter(style='github-dark')))
+            fr = answer
+            while fr.find(("```"))>=0:
+                fr = self.syntax_highlight(fr)
+            print(fr)
         else:
             print(answer)
         if self.speech:
