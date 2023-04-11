@@ -1,6 +1,7 @@
-import os, cmd
+import os
+import cmd
 from datetime import datetime
-import openai
+import openai                   #https://github.com/openai/openai-python
 import sounddevice as sd
 import soundfile as sf
 import numpy as np
@@ -13,7 +14,7 @@ from pygments.formatters import Terminal256Formatter
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-def get_model_engine(engine='gpt-3.5-turbo'):
+def get_model_engine(engine='gpt-3.5-turbo'): #Change the Engine here!
     if engine == 'gpt-3.5-turbo':
         return 'gpt-3.5-turbo'
     else:
@@ -25,6 +26,8 @@ def reset_engine():
     global user_role
     global start_chat_log
     global chat_log
+    global you_prompt
+    global ai_prompt
     if get_model_engine() == 'gpt-3.5-turbo':
         system_role = 'system'
         assistant_role = 'assistant'
@@ -200,6 +203,14 @@ class chat_cmd(cmd.Cmd):
         else:
             global chat_log
             chat_log = ''
+
+    def do_load(self, arg:str):
+        global start_chat_log
+        args = arg.split()
+        if(len(args)==1):
+            start_chat_log = get_chat_log(args[0])
+        else:
+            print('Syntax error: '+ args[0])
 
     def do_save(self, arg: str):
         global chat_log
